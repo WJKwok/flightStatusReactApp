@@ -5,9 +5,20 @@ import { FlightCard } from '../FlightCard/FlightCard';
 
 class SearchPage extends Component {
 
+    flightStatus = {
+        'A': 'Active',
+        'D': 'Diverted',
+        'DN': 'Data source needed',
+        'L': 'Landed',
+        'NO': 'Not Operational',
+        'R': 'Redirected',
+        'S': 'Scheduled',
+        'U': 'Unknown'
+    }
+
     state = {
-        flightNo: '',
-        searchedNo: '',
+        searchInput: '',
+        errorMessage: '',
         imptData: {},
     }
 
@@ -15,87 +26,114 @@ class SearchPage extends Component {
         this.setState({
             [e.target.id]: e.target.value
         })
-        console.log(this.state.flightNo);
+        console.log(this.state.searchInput);
     }
 
     submitHandler = (e) => {
-        let searchTerm = this.state.flightNo;
+
+        let searchTerm = this.state.searchInput;
         let bs = searchTerm.split(' ').join('');
+
+        if (bs.length == 0) {
+            
+            this.setState({
+                searchInput: '',
+                errorMessage: '',
+            })
+
+            return null;
+        }
+
         let regexStr = bs.match(/[a-z]+|[^a-z]+/gi);
-        console.log(regexStr);
-        console.log('searching');
-        let searchedNo = regexStr[0] + regexStr[1]
-        searchedNo = searchedNo.toUpperCase();
+        
+        //Display Searched Flight in uppercase
+        let flightNumber = regexStr[0] + regexStr[1]
+        flightNumber = flightNumber.toUpperCase();
         this.setState({
-            flightNo: '',
-            searchedNo: searchedNo
+            searchInput: '',
+            errorMessage: '',
         })
+
+        //get date
+        const today = new Date();
+        const todayFormatted = today.getFullYear() + '/' + (today.getMonth() + 1) + '/' + today.getDate();
+
         const appId = '8a3f5b9c';
         const appKey = '97ed09e2c8b1052afeaae034e602802f';
         const carrier = regexStr[0];
         const flight = regexStr[1];
-        const date = '2020/1/29';
+        const date = todayFormatted;
         let url = `/flex/flightstatus/rest/v2/json/flight/status/${carrier}/${flight}/arr/${date}?appId=${appId}&appKey=${appKey}&utc=false`
 
         
         axios.get(url)
         .then((resp) => {
+
+            //console.log(resp);
+
             let imptData = {};
-            console.log(resp);
+
+            let departureDate;
+            let departureTime;
+            let arrivalDate;
+            let arrivalTime;
 
             let specificData = resp.data.flightStatuses[0]
 
-            //from and to airport code
-            console.log(specificData.departureAirportFsCode);
-            console.log(specificData.arrivalAirportFsCode);
-            
-            //Flight Duration
-            console.log(specificData.flightDurations.scheduledBlockMinutes);
-            
-            //Flight arrival time
-            console.log(specificData.arrivalDate.dateLocal);
-            
-            //https://developer.flightstats.com/api-docs/flightstatus/v2/flightstatusresponse
-            console.log(specificData.status);
-            
-            //Delays
-            console.log(specificData.delays.arrivalGateDelayMinutes);
+            if (specificData.departureDate.dateLocal) {
+                let splitDepTime = specificData.departureDate.dateLocal.split('T');
+                [departureDate, departureTime] = splitDepTime;
+            }
 
-            //terminal/gate
-            console.log(specificData.airportResources.arrivalTerminal);
-            console.log(specificData.airportResources.arrivalGate);
+            if (specificData.arrivalDate.dateLocal) {
+                let splitArrTime = specificData.arrivalDate.dateLocal.split('T');
+                [arrivalDate, arrivalTime] = splitArrTime;
+            }
 
-            //baggage
-            console.log(specificData.airportResources.baggage);
+            const flightLength = specificData.flightDurations.scheduledBlockMinutes;
+            const flightDuration = `${Math.floor(flightLength/60)} Hours ${flightLength%60} Mins`;
 
             imptData = {
+                flightNumber: flightNumber,
                 from: specificData.departureAirportFsCode,
                 to: specificData.arrivalAirportFsCode,
+                flightDuration: flightDuration,
+                departureDate: departureDate,
+                departureTime: departureTime,
+                status: this.flightStatus[specificData.status],
+                arrivalDate: arrivalDate,
+                arrivalTime: arrivalTime,
+                delay: specificData.delays.arrivalGateDelayMinutes,
+                departureTerminal: specificData.airportResources.departureTerminal,
+                arrivalTerminal: specificData.airportResources.arrivalTerminal,
+                gate: specificData.airportResources.arrivalGate,
+                baggage: specificData.airportResources.baggage
             }
 
             this.setState({
                 imptData: imptData,
+            }) 
+
+        }).catch(error => {
+            this.setState({
+                errorMessage: 'Flight Unavailable',
+                imptData: {},
             })
-
-            console.log('ehehhehe');
-            console.log(this.state.imptData.from);
         });
-        
     }
-
 
     render() {
         return(
             <div className='white-overlay'>
                 <label>Flight Number</label>
                 <div className='h-align'>
-                    <input id="flightNo"
+                    <input id="searchInput"
                         placeholder="e.g. FR1647" 
-                        value={this.state.flightNo}
+                        value={this.state.searchInput}
                         onChange={this.changeHandler}/>
                     <a className="waves-effect waves-light btn" onClick={this.submitHandler}>Search</a>
                 </div>
-                <h1>{this.state.searchedNo}</h1>
+                {this.state.errorMessage ? <h1>{this.state.errorMessage}</h1> : null }
                 <FlightCard props={this.state.imptData}/>
             </div>
         );
