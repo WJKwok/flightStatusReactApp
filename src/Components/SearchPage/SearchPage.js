@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import axios from 'axios';
+
+import { searchFlight } from '../../Store/Actions/searchAction';
 
 import { FlightCard } from '../FlightCard/FlightCard';
 
@@ -31,11 +34,13 @@ class SearchPage extends Component {
 
     submitHandler = (e) => {
 
+        this.props.searchFlight();
+
         let searchTerm = this.state.searchInput;
         let bs = searchTerm.split(' ').join('');
 
         if (bs.length == 0) {
-            
+
             this.setState({
                 searchInput: '',
                 errorMessage: '',
@@ -140,4 +145,17 @@ class SearchPage extends Component {
     }
 }
 
-export default SearchPage;
+const mapStateToProps = (state) => {
+    console.log(state);
+    return {
+        
+    }
+}
+
+const mapDispatchToProps = (dispatch) => {
+    return {
+        searchFlight: () => dispatch(searchFlight())
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(SearchPage);
