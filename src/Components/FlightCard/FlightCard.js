@@ -4,12 +4,12 @@ const FlightCard = (props) => {
     let object = props.props;
     console.log(object);
     
-    if (object.from) {
+    if (object) {
         return(
             <div>
                 <div className="row">
                     <div className="col s12 line-height">
-                        <p className="flight-header">{object.flightNumber}</p>
+                        <p className="flight-header">{object.flightNumber.toUpperCase()}</p>
                         <p>Flight Status: {object.status}</p>
                         <p>Flight Duration: {object.flightDuration}</p>
                         <p>Delay: {object.delay? `${object.delay} mins` : 'None'}</p>
