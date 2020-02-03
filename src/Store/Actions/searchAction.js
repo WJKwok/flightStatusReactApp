@@ -8,7 +8,7 @@ export const searchFlight = (carrier, flight) => {
         const todayFormatted = today.getFullYear() + '/' + (today.getMonth() + 1) + '/' + today.getDate();
 
         const appId = '8a3f5b9c';
-        const appKey = '97ed09e2c8b1052afeaae034e602802f';
+        const appKey = process.env.REACT_APP_FLIGHT_STATS_APP_KEY ;
         let url = `/flex/flightstatus/rest/v2/json/flight/status/${carrier}/${flight}/arr/${todayFormatted}?appId=${appId}&appKey=${appKey}&utc=false`
 
         
@@ -33,7 +33,7 @@ export const searchFlight = (carrier, flight) => {
             let arrivalDate;
             let arrivalTime;
             let flightNumber = carrier + flight;
-
+   
             let specificData = response.data.flightStatuses[0];
 
             //formatting date result
